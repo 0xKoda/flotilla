@@ -1,9 +1,11 @@
 // THIS FILE IS GENERATED AUTOMATICALLY. DO NOT MODIFY.
 
+import FlotillaDex from './flotilla.dex'
 import FlotillaFlotilla from './flotilla.flotilla'
 
 
 export default { 
+  FlotillaDex: load(FlotillaDex, 'flotilla.dex'),
   FlotillaFlotilla: load(FlotillaFlotilla, 'flotilla.flotilla'),
   
 }
