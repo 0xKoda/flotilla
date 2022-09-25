@@ -7,10 +7,43 @@ import { msgTypes } from './registry';
 import { IgniteClient } from "../client"
 import { MissingWalletError } from "../helpers"
 import { Api } from "./rest";
+import { MsgSendSellOrder } from "./types/dex/tx";
+import { MsgSendBuyOrder } from "./types/dex/tx";
+import { MsgSendCreatePair } from "./types/dex/tx";
 
 
-export {  };
+export { MsgSendSellOrder, MsgSendBuyOrder, MsgSendCreatePair };
 
+type sendMsgSendSellOrderParams = {
+  value: MsgSendSellOrder,
+  fee?: StdFee,
+  memo?: string
+};
+
+type sendMsgSendBuyOrderParams = {
+  value: MsgSendBuyOrder,
+  fee?: StdFee,
+  memo?: string
+};
+
+type sendMsgSendCreatePairParams = {
+  value: MsgSendCreatePair,
+  fee?: StdFee,
+  memo?: string
+};
+
+
+type msgSendSellOrderParams = {
+  value: MsgSendSellOrder,
+};
+
+type msgSendBuyOrderParams = {
+  value: MsgSendBuyOrder,
+};
+
+type msgSendCreatePairParams = {
+  value: MsgSendCreatePair,
+};
 
 
 export const registry = new Registry(msgTypes);
@@ -30,6 +63,72 @@ export const txClient = ({ signer, prefix, addr }: TxClientOptions = { addr: "ht
 
   return {
 		
+		async sendMsgSendSellOrder({ value, fee, memo }: sendMsgSendSellOrderParams): Promise<DeliverTxResponse> {
+			if (!signer) {
+					throw new Error('TxClient:sendMsgSendSellOrder: Unable to sign Tx. Signer is not present.')
+			}
+			try {			
+				const { address } = (await signer.getAccounts())[0]; 
+				const signingClient = await SigningStargateClient.connectWithSigner(addr,signer,{registry, prefix});
+				let msg = this.msgSendSellOrder({ value: MsgSendSellOrder.fromPartial(value) })
+				return await signingClient.signAndBroadcast(address, [msg], fee ? fee : defaultFee, memo)
+			} catch (e: any) {
+				throw new Error('TxClient:sendMsgSendSellOrder: Could not broadcast Tx: '+ e.message)
+			}
+		},
+		
+		async sendMsgSendBuyOrder({ value, fee, memo }: sendMsgSendBuyOrderParams): Promise<DeliverTxResponse> {
+			if (!signer) {
+					throw new Error('TxClient:sendMsgSendBuyOrder: Unable to sign Tx. Signer is not present.')
+			}
+			try {			
+				const { address } = (await signer.getAccounts())[0]; 
+				const signingClient = await SigningStargateClient.connectWithSigner(addr,signer,{registry, prefix});
+				let msg = this.msgSendBuyOrder({ value: MsgSendBuyOrder.fromPartial(value) })
+				return await signingClient.signAndBroadcast(address, [msg], fee ? fee : defaultFee, memo)
+			} catch (e: any) {
+				throw new Error('TxClient:sendMsgSendBuyOrder: Could not broadcast Tx: '+ e.message)
+			}
+		},
+		
+		async sendMsgSendCreatePair({ value, fee, memo }: sendMsgSendCreatePairParams): Promise<DeliverTxResponse> {
+			if (!signer) {
+					throw new Error('TxClient:sendMsgSendCreatePair: Unable to sign Tx. Signer is not present.')
+			}
+			try {			
+				const { address } = (await signer.getAccounts())[0]; 
+				const signingClient = await SigningStargateClient.connectWithSigner(addr,signer,{registry, prefix});
+				let msg = this.msgSendCreatePair({ value: MsgSendCreatePair.fromPartial(value) })
+				return await signingClient.signAndBroadcast(address, [msg], fee ? fee : defaultFee, memo)
+			} catch (e: any) {
+				throw new Error('TxClient:sendMsgSendCreatePair: Could not broadcast Tx: '+ e.message)
+			}
+		},
+		
+		
+		msgSendSellOrder({ value }: msgSendSellOrderParams): EncodeObject {
+			try {
+				return { typeUrl: "/flotilla.dex.MsgSendSellOrder", value: MsgSendSellOrder.fromPartial( value ) }  
+			} catch (e: any) {
+				throw new Error('TxClient:MsgSendSellOrder: Could not create message: ' + e.message)
+			}
+		},
+		
+		msgSendBuyOrder({ value }: msgSendBuyOrderParams): EncodeObject {
+			try {
+				return { typeUrl: "/flotilla.dex.MsgSendBuyOrder", value: MsgSendBuyOrder.fromPartial( value ) }  
+			} catch (e: any) {
+				throw new Error('TxClient:MsgSendBuyOrder: Could not create message: ' + e.message)
+			}
+		},
+		
+		msgSendCreatePair({ value }: msgSendCreatePairParams): EncodeObject {
+			try {
+				return { typeUrl: "/flotilla.dex.MsgSendCreatePair", value: MsgSendCreatePair.fromPartial( value ) }  
+			} catch (e: any) {
+				throw new Error('TxClient:MsgSendCreatePair: Could not create message: ' + e.message)
+			}
+		},
 		
 	}
 };

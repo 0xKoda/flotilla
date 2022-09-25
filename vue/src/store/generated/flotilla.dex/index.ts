@@ -3,11 +3,17 @@ import { Client, registry, MissingWalletError } from 'flotilla-client-ts'
 import { BuyOrderBook } from "flotilla-client-ts/flotilla.dex/types"
 import { DexPacketData } from "flotilla-client-ts/flotilla.dex/types"
 import { NoData } from "flotilla-client-ts/flotilla.dex/types"
+import { CreatePairPacketData } from "flotilla-client-ts/flotilla.dex/types"
+import { CreatePairPacketAck } from "flotilla-client-ts/flotilla.dex/types"
+import { SellOrderPacketData } from "flotilla-client-ts/flotilla.dex/types"
+import { SellOrderPacketAck } from "flotilla-client-ts/flotilla.dex/types"
+import { BuyOrderPacketData } from "flotilla-client-ts/flotilla.dex/types"
+import { BuyOrderPacketAck } from "flotilla-client-ts/flotilla.dex/types"
 import { Params } from "flotilla-client-ts/flotilla.dex/types"
 import { SellOrderBook } from "flotilla-client-ts/flotilla.dex/types"
 
 
-export { BuyOrderBook, DexPacketData, NoData, Params, SellOrderBook };
+export { BuyOrderBook, DexPacketData, NoData, CreatePairPacketData, CreatePairPacketAck, SellOrderPacketData, SellOrderPacketAck, BuyOrderPacketData, BuyOrderPacketAck, Params, SellOrderBook };
 
 function initClient(vuexGetters) {
 	return new Client(vuexGetters['common/env/getEnv'], vuexGetters['common/wallet/signer'])
@@ -48,6 +54,12 @@ const getDefaultState = () => {
 						BuyOrderBook: getStructure(BuyOrderBook.fromPartial({})),
 						DexPacketData: getStructure(DexPacketData.fromPartial({})),
 						NoData: getStructure(NoData.fromPartial({})),
+						CreatePairPacketData: getStructure(CreatePairPacketData.fromPartial({})),
+						CreatePairPacketAck: getStructure(CreatePairPacketAck.fromPartial({})),
+						SellOrderPacketData: getStructure(SellOrderPacketData.fromPartial({})),
+						SellOrderPacketAck: getStructure(SellOrderPacketAck.fromPartial({})),
+						BuyOrderPacketData: getStructure(BuyOrderPacketData.fromPartial({})),
+						BuyOrderPacketAck: getStructure(BuyOrderPacketAck.fromPartial({})),
 						Params: getStructure(Params.fromPartial({})),
 						SellOrderBook: getStructure(SellOrderBook.fromPartial({})),
 						
@@ -260,7 +272,85 @@ export default {
 		},
 		
 		
+		async sendMsgSendSellOrder({ rootGetters }, { value, fee = [], memo = '' }) {
+			try {
+				const client=await initClient(rootGetters)
+				const result = await client.FlotillaDex.tx.sendMsgSendSellOrder({ value, fee: {amount: fee, gas: "200000"}, memo })
+				return result
+			} catch (e) {
+				if (e == MissingWalletError) {
+					throw new Error('TxClient:MsgSendSellOrder:Init Could not initialize signing client. Wallet is required.')
+				}else{
+					throw new Error('TxClient:MsgSendSellOrder:Send Could not broadcast Tx: '+ e.message)
+				}
+			}
+		},
+		async sendMsgSendBuyOrder({ rootGetters }, { value, fee = [], memo = '' }) {
+			try {
+				const client=await initClient(rootGetters)
+				const result = await client.FlotillaDex.tx.sendMsgSendBuyOrder({ value, fee: {amount: fee, gas: "200000"}, memo })
+				return result
+			} catch (e) {
+				if (e == MissingWalletError) {
+					throw new Error('TxClient:MsgSendBuyOrder:Init Could not initialize signing client. Wallet is required.')
+				}else{
+					throw new Error('TxClient:MsgSendBuyOrder:Send Could not broadcast Tx: '+ e.message)
+				}
+			}
+		},
+		async sendMsgSendCreatePair({ rootGetters }, { value, fee = [], memo = '' }) {
+			try {
+				const client=await initClient(rootGetters)
+				const result = await client.FlotillaDex.tx.sendMsgSendCreatePair({ value, fee: {amount: fee, gas: "200000"}, memo })
+				return result
+			} catch (e) {
+				if (e == MissingWalletError) {
+					throw new Error('TxClient:MsgSendCreatePair:Init Could not initialize signing client. Wallet is required.')
+				}else{
+					throw new Error('TxClient:MsgSendCreatePair:Send Could not broadcast Tx: '+ e.message)
+				}
+			}
+		},
 		
+		async MsgSendSellOrder({ rootGetters }, { value }) {
+			try {
+				const client=initClient(rootGetters)
+				const msg = await client.FlotillaDex.tx.msgSendSellOrder({value})
+				return msg
+			} catch (e) {
+				if (e == MissingWalletError) {
+					throw new Error('TxClient:MsgSendSellOrder:Init Could not initialize signing client. Wallet is required.')
+				} else{
+					throw new Error('TxClient:MsgSendSellOrder:Create Could not create message: ' + e.message)
+				}
+			}
+		},
+		async MsgSendBuyOrder({ rootGetters }, { value }) {
+			try {
+				const client=initClient(rootGetters)
+				const msg = await client.FlotillaDex.tx.msgSendBuyOrder({value})
+				return msg
+			} catch (e) {
+				if (e == MissingWalletError) {
+					throw new Error('TxClient:MsgSendBuyOrder:Init Could not initialize signing client. Wallet is required.')
+				} else{
+					throw new Error('TxClient:MsgSendBuyOrder:Create Could not create message: ' + e.message)
+				}
+			}
+		},
+		async MsgSendCreatePair({ rootGetters }, { value }) {
+			try {
+				const client=initClient(rootGetters)
+				const msg = await client.FlotillaDex.tx.msgSendCreatePair({value})
+				return msg
+			} catch (e) {
+				if (e == MissingWalletError) {
+					throw new Error('TxClient:MsgSendCreatePair:Init Could not initialize signing client. Wallet is required.')
+				} else{
+					throw new Error('TxClient:MsgSendCreatePair:Create Could not create message: ' + e.message)
+				}
+			}
+		},
 		
 	}
 }

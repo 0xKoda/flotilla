@@ -69106,6 +69106,12 @@ definitions:
         type: string
       priceDenom:
         type: string
+  flotilla.dex.MsgSendBuyOrderResponse:
+    type: object
+  flotilla.dex.MsgSendCreatePairResponse:
+    type: object
+  flotilla.dex.MsgSendSellOrderResponse:
+    type: object
   flotilla.dex.Params:
     type: object
     description: Params defines the parameters for the module.
