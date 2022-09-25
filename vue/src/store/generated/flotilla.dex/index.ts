@@ -1,6 +1,7 @@
 import { Client, registry, MissingWalletError } from 'flotilla-client-ts'
 
 import { BuyOrderBook } from "flotilla-client-ts/flotilla.dex/types"
+import { DenomTrace } from "flotilla-client-ts/flotilla.dex/types"
 import { DexPacketData } from "flotilla-client-ts/flotilla.dex/types"
 import { NoData } from "flotilla-client-ts/flotilla.dex/types"
 import { CreatePairPacketData } from "flotilla-client-ts/flotilla.dex/types"
@@ -13,7 +14,7 @@ import { Params } from "flotilla-client-ts/flotilla.dex/types"
 import { SellOrderBook } from "flotilla-client-ts/flotilla.dex/types"
 
 
-export { BuyOrderBook, DexPacketData, NoData, CreatePairPacketData, CreatePairPacketAck, SellOrderPacketData, SellOrderPacketAck, BuyOrderPacketData, BuyOrderPacketAck, Params, SellOrderBook };
+export { BuyOrderBook, DenomTrace, DexPacketData, NoData, CreatePairPacketData, CreatePairPacketAck, SellOrderPacketData, SellOrderPacketAck, BuyOrderPacketData, BuyOrderPacketAck, Params, SellOrderBook };
 
 function initClient(vuexGetters) {
 	return new Client(vuexGetters['common/env/getEnv'], vuexGetters['common/wallet/signer'])
@@ -49,9 +50,12 @@ const getDefaultState = () => {
 				SellOrderBookAll: {},
 				BuyOrderBook: {},
 				BuyOrderBookAll: {},
+				DenomTrace: {},
+				DenomTraceAll: {},
 				
 				_Structure: {
 						BuyOrderBook: getStructure(BuyOrderBook.fromPartial({})),
+						DenomTrace: getStructure(DenomTrace.fromPartial({})),
 						DexPacketData: getStructure(DexPacketData.fromPartial({})),
 						NoData: getStructure(NoData.fromPartial({})),
 						CreatePairPacketData: getStructure(CreatePairPacketData.fromPartial({})),
@@ -119,6 +123,18 @@ export default {
 						(<any> params).query=null
 					}
 			return state.BuyOrderBookAll[JSON.stringify(params)] ?? {}
+		},
+				getDenomTrace: (state) => (params = { params: {}}) => {
+					if (!(<any> params).query) {
+						(<any> params).query=null
+					}
+			return state.DenomTrace[JSON.stringify(params)] ?? {}
+		},
+				getDenomTraceAll: (state) => (params = { params: {}}) => {
+					if (!(<any> params).query) {
+						(<any> params).query=null
+					}
+			return state.DenomTraceAll[JSON.stringify(params)] ?? {}
 		},
 				
 		getTypeStructure: (state) => (type) => {
@@ -272,19 +288,54 @@ export default {
 		},
 		
 		
-		async sendMsgSendSellOrder({ rootGetters }, { value, fee = [], memo = '' }) {
+		
+		
+		 		
+		
+		
+		async QueryDenomTrace({ commit, rootGetters, getters }, { options: { subscribe, all} = { subscribe:false, all:false}, params, query=null }) {
 			try {
-				const client=await initClient(rootGetters)
-				const result = await client.FlotillaDex.tx.sendMsgSendSellOrder({ value, fee: {amount: fee, gas: "200000"}, memo })
-				return result
+				const key = params ?? {};
+				const client = initClient(rootGetters);
+				let value= (await client.FlotillaDex.query.queryDenomTrace( key.index)).data
+				
+					
+				commit('QUERY', { query: 'DenomTrace', key: { params: {...key}, query}, value })
+				if (subscribe) commit('SUBSCRIBE', { action: 'QueryDenomTrace', payload: { options: { all }, params: {...key},query }})
+				return getters['getDenomTrace']( { params: {...key}, query}) ?? {}
 			} catch (e) {
-				if (e == MissingWalletError) {
-					throw new Error('TxClient:MsgSendSellOrder:Init Could not initialize signing client. Wallet is required.')
-				}else{
-					throw new Error('TxClient:MsgSendSellOrder:Send Could not broadcast Tx: '+ e.message)
-				}
+				throw new Error('QueryClient:QueryDenomTrace API Node Unavailable. Could not perform query: ' + e.message)
+				
 			}
 		},
+		
+		
+		
+		
+		 		
+		
+		
+		async QueryDenomTraceAll({ commit, rootGetters, getters }, { options: { subscribe, all} = { subscribe:false, all:false}, params, query=null }) {
+			try {
+				const key = params ?? {};
+				const client = initClient(rootGetters);
+				let value= (await client.FlotillaDex.query.queryDenomTraceAll(query ?? undefined)).data
+				
+					
+				while (all && (<any> value).pagination && (<any> value).pagination.next_key!=null) {
+					let next_values=(await client.FlotillaDex.query.queryDenomTraceAll({...query ?? {}, 'pagination.key':(<any> value).pagination.next_key} as any)).data
+					value = mergeResults(value, next_values);
+				}
+				commit('QUERY', { query: 'DenomTraceAll', key: { params: {...key}, query}, value })
+				if (subscribe) commit('SUBSCRIBE', { action: 'QueryDenomTraceAll', payload: { options: { all }, params: {...key},query }})
+				return getters['getDenomTraceAll']( { params: {...key}, query}) ?? {}
+			} catch (e) {
+				throw new Error('QueryClient:QueryDenomTraceAll API Node Unavailable. Could not perform query: ' + e.message)
+				
+			}
+		},
+		
+		
 		async sendMsgSendBuyOrder({ rootGetters }, { value, fee = [], memo = '' }) {
 			try {
 				const client=await initClient(rootGetters)
@@ -311,20 +362,46 @@ export default {
 				}
 			}
 		},
-		
-		async MsgSendSellOrder({ rootGetters }, { value }) {
+		async sendMsgCancelBuyOrder({ rootGetters }, { value, fee = [], memo = '' }) {
 			try {
-				const client=initClient(rootGetters)
-				const msg = await client.FlotillaDex.tx.msgSendSellOrder({value})
-				return msg
+				const client=await initClient(rootGetters)
+				const result = await client.FlotillaDex.tx.sendMsgCancelBuyOrder({ value, fee: {amount: fee, gas: "200000"}, memo })
+				return result
 			} catch (e) {
 				if (e == MissingWalletError) {
-					throw new Error('TxClient:MsgSendSellOrder:Init Could not initialize signing client. Wallet is required.')
-				} else{
-					throw new Error('TxClient:MsgSendSellOrder:Create Could not create message: ' + e.message)
+					throw new Error('TxClient:MsgCancelBuyOrder:Init Could not initialize signing client. Wallet is required.')
+				}else{
+					throw new Error('TxClient:MsgCancelBuyOrder:Send Could not broadcast Tx: '+ e.message)
 				}
 			}
 		},
+		async sendMsgSendSellOrder({ rootGetters }, { value, fee = [], memo = '' }) {
+			try {
+				const client=await initClient(rootGetters)
+				const result = await client.FlotillaDex.tx.sendMsgSendSellOrder({ value, fee: {amount: fee, gas: "200000"}, memo })
+				return result
+			} catch (e) {
+				if (e == MissingWalletError) {
+					throw new Error('TxClient:MsgSendSellOrder:Init Could not initialize signing client. Wallet is required.')
+				}else{
+					throw new Error('TxClient:MsgSendSellOrder:Send Could not broadcast Tx: '+ e.message)
+				}
+			}
+		},
+		async sendMsgCancelSellOrder({ rootGetters }, { value, fee = [], memo = '' }) {
+			try {
+				const client=await initClient(rootGetters)
+				const result = await client.FlotillaDex.tx.sendMsgCancelSellOrder({ value, fee: {amount: fee, gas: "200000"}, memo })
+				return result
+			} catch (e) {
+				if (e == MissingWalletError) {
+					throw new Error('TxClient:MsgCancelSellOrder:Init Could not initialize signing client. Wallet is required.')
+				}else{
+					throw new Error('TxClient:MsgCancelSellOrder:Send Could not broadcast Tx: '+ e.message)
+				}
+			}
+		},
+		
 		async MsgSendBuyOrder({ rootGetters }, { value }) {
 			try {
 				const client=initClient(rootGetters)
@@ -348,6 +425,45 @@ export default {
 					throw new Error('TxClient:MsgSendCreatePair:Init Could not initialize signing client. Wallet is required.')
 				} else{
 					throw new Error('TxClient:MsgSendCreatePair:Create Could not create message: ' + e.message)
+				}
+			}
+		},
+		async MsgCancelBuyOrder({ rootGetters }, { value }) {
+			try {
+				const client=initClient(rootGetters)
+				const msg = await client.FlotillaDex.tx.msgCancelBuyOrder({value})
+				return msg
+			} catch (e) {
+				if (e == MissingWalletError) {
+					throw new Error('TxClient:MsgCancelBuyOrder:Init Could not initialize signing client. Wallet is required.')
+				} else{
+					throw new Error('TxClient:MsgCancelBuyOrder:Create Could not create message: ' + e.message)
+				}
+			}
+		},
+		async MsgSendSellOrder({ rootGetters }, { value }) {
+			try {
+				const client=initClient(rootGetters)
+				const msg = await client.FlotillaDex.tx.msgSendSellOrder({value})
+				return msg
+			} catch (e) {
+				if (e == MissingWalletError) {
+					throw new Error('TxClient:MsgSendSellOrder:Init Could not initialize signing client. Wallet is required.')
+				} else{
+					throw new Error('TxClient:MsgSendSellOrder:Create Could not create message: ' + e.message)
+				}
+			}
+		},
+		async MsgCancelSellOrder({ rootGetters }, { value }) {
+			try {
+				const client=initClient(rootGetters)
+				const msg = await client.FlotillaDex.tx.msgCancelSellOrder({value})
+				return msg
+			} catch (e) {
+				if (e == MissingWalletError) {
+					throw new Error('TxClient:MsgCancelSellOrder:Init Could not initialize signing client. Wallet is required.')
+				} else{
+					throw new Error('TxClient:MsgCancelSellOrder:Create Could not create message: ' + e.message)
 				}
 			}
 		},
